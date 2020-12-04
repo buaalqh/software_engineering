@@ -1,0 +1,11 @@
+软件体系结构的类型
+
+软件工程-三层架构
+https://blog.csdn.net/zzyoucan/article/details/8637376?utm_medium=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-3.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-3.channel_param
+
+https://blog.csdn.net/shhy0410/article/details/4329561
+
+https://blog.csdn.net/chenglinben/article/details/90736038?utm_medium=distribute.pc_relevant.none-task-blog-title-1&spm=1001.2101.3001.4242
+
+计算机网络中的五层协议的体系结构
+https://blog.csdn.net/ammmao/article/details/92104262?utm_medium=distribute.pc_relevant.none-task-blog-OPENSEARCH-6.channel_param&depth_1-utm_source=distribute.pc_relevant.none-task-blog-OPENSEARCH-6.channel_param

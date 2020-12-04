@@ -1,0 +1,110 @@
+Pod：-the smallest in the Kubernetes object model
+	-encapsulates an application's container
+	-storage resources
+	-a unique network identity (IP address)
+	-options that govern how the container(s) should run.
+
+minikube start
+minikube stop
+minikube node delete minikube-m02
+minikube delete
+minikube dashboard
+minikube ssh
+
+display all pods: kubectl get pods
+log: kubectl logs hello-world-pod --timestamps
+delete pod: kubectl delete pod hello-world-pod
+run commande inside a conatainer in a pod: kubectl run alpine-pod --rm --image=alpine -- ls
+与alphine的container内部交互：kubectl run alpine-pod --image=alpine -it -- ash
+退出之后恢复会话：kubectl attach alpine-pod -c alpine-pod -i -t
+
+container和host传递文件：
+Host: kubectl run alpine-pod --image=alpine -it -- ash
+Host: create a file dadjoke.txt: echo "A ham sandwich walks into a bar and the bar bartender says...Sorry we don't serve food here." > dadjoke.txt
+Host: copy the file from the host to the /tmp directory of the container: kubectl cp dadjoke.txt alpine-pod:/tmp/
+Container: check that the file is there: more /tmp/dadjoke.txt
+Container: create a file chucknorris: echo 'When God said, "Let there be light!" Chuck said, "Say Please."' > chucknorris
+Host: copy the file from the container to the host: kubectl cp alpine-pod:/chucknorris chuckNorrisJoke.txt or kubectl cp alpine-pod:chucknorris chuckNorrisJoke.txt
+Host: check that the file is there: more chuckNorrisJoke.txt
+
+
+远程多node操作：
+
+HOST $ ssh cpusdi1_33@phome.metz.supelec.fr
+cpu2020sdi1
+
+-bash-4.2$ ssh ic130
+cpusdi1_60@ic122:~$ kubectl -n cpusdi1_33-ns run hello-world-pod --image=hello-world
+cpusdi1_60@ic122:~$ kubectl -n cpusdi1_33-ns get pods
+cpusdi1_60@ic122:~$ kubectl -n cpusdi1_33-ns describe pod hello-world-pod
+cpusdi1_60@ic122:~$ kubectl -n cpusdi1_33-ns logs hello-world-pod --timestamps
+cpusdi1_60@ic122:~$ kubectl -n cpusdi1_33-ns delete pod hello-world-pod
+
+写了yml文件操作：
+run kubectl apply：kubectl apply -f hello-world.yml
+on the intercell: kubectl -n cpusdi1-60-ns apply -f hello-world.yml
+删除：kubectl delete -f hello-world.yml
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------
+volume
+-----------------------------------------------
+A Pod can use multiple volumes simultaneously (that's not the case for Docker);
+A volume exists as long as the pod exists, even if the containers within the pod are stopped.
+
+Host: kubectl apply -f alpine-with-volume.yml
+Host: kubectl attach alpine-with-volume-pod -c alpine-with-volume-container -i -t
+Pod: cd containerizedJokes/
+Pod: echo "A ham sandwich walks into a bar and the bar bartender says...Sorry we don't serve food here." > dadJoke.txt
+
+If you're running Minikube directly on your laptop
+Now if you look in the /tmp directory of your host, you don't see the hostedJokes directory as you would expect. That's because we are running Kubernetes in the Minikube virtual machine. Instead log to Minikube and check its /tmp directory:
+Host: minikube ssh
+Minikube shell: cd /tmp/hostedJokes
+Minikube shell: cat dadJoke.txt
+Minikube shell: sudo chmod 777 /tmp/hostedJokes
+Minikube shell: echo "What sound does a witches car make? Broom Broom" > dadJoke2.txt
+Pod: cat /containerizedJokes/dadJoke2.tx
+
+
+--------------------------------------------
+Networking
+--------------------------------------------
+container-to-container
+Host~$ kubectl attach container-to-container-pod -c curl-container -i -t
+/ $ curl localhost:80
+
+pod-to-pod networking
+kubectl get pods -o wide
+Host~$ kubectl attach curl-pod -i -t
+/ $ curl 172.18.0.4:80
+
+Across nodes
+
+---------------------------------
+service
+---------------------------------
+IP addresses are not durable and will appear and disappear in response to scaling up or down, application crashes, or node reboots;
+Each of these events can make the Pod IP address change without warning;
+A Kubernetes Service manages the state of a set of Pods, allowing you to track a set of Pod IP addresses that are dynamically changing over time;
+clients only need to know the Service’s virtual IP, which does not change.
+
+Host~$ kubectl apply -f pod-to-service.yml
+
+Host~$ kubectl attach curl-pod -i -t
+/ $ curl web-server-service:85
+
+----------------------------------------
+cluster and outside world
+----------------------------------------
+
+
+

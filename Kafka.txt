@@ -1,0 +1,30 @@
+gedit ~/.profile
+export KAFKA_HOME=kafka_2.13-2.6.0
+Maven: MT project
+
+连接metz的集群单元
+ssh cpusdi1_32@phome.metz.supelec.fr
+密码：cpu2020sdi1
+连接我的节点：ssh cpusdi1_32@ic132
+
+使用流程：
+
+开启zookeeper：
+$KAFKA_HOME/bin/zookeeper-server-start.sh $KAFKA_HOME/config/zookeeper.properties &
+开启kafka代理：
+$KAFKA_HOME/bin/kafka-server-start.sh $KAFKA_HOME/config/server.properties &
+创建test的单分区单副本topic：
+$KAFKA_HOME/bin/kafka-topics.sh --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic test
+开启终端producer：
+$KAFKA_HOME/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic test
+开启终端consumer：
+$KAFKA_HOME/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning
+删除test的topic并且关闭kafka服务：
+$KAFKA_HOME/bin/kafka-topics.sh --delete --bootstrap-server localhost:9092 --topic test
+$KAFKA_HOME/bin/kafka-server-stop.sh
+查看topic列表：
+$KAFKA_HOME/bin/kafka-topics.sh --list --zookeeper localhost:2181
+查看Topic消息：
+$KAFKA_HOME/bin/kafka-topics.sh --describe --zookeeper localhost:2181 --topic test
+
+查看运行进程：ls /tmp/
