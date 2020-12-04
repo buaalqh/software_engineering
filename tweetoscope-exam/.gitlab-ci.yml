@@ -1,0 +1,217 @@
+stages:
+    - build
+    - unit_tests
+    - create_docker_images
+
+## Test the compilation of the collector and the generator
+build_generator_collector_job:
+    stage: build
+    image: anaslaaroussi/tweetoscope:base-1.0
+    tags:
+        - docker
+    script:
+        - mkdir build
+        - cd build
+        - cmake .. -DCMAKE_INSTALL_PREFIX=~/.local/ 
+        - make -j
+        - make install  
+    only:
+        changes:
+            - collector/*
+            - generator/*
+            - params/*
+            - CMakeLists.txt
+    artifacts:
+        paths:
+            - build
+        expire_in: 30 days
+        
+
+## Generate documentation and publish it to gitlab pages
+# Only when changes are commited to master tag is created (stable version of the application)
+pages:
+    stage: build
+    image: alpine
+    tags:
+        - docker
+    script:
+        - apk update && apk add doxygen graphviz ttf-freefont
+        - mkdir build
+        - cd build
+        - mkdir doc
+        - cd ../doc
+        - doxygen Doxyfile.in
+        - cd ..
+        - mv build/doc/html/ public/
+    artifacts:
+        paths:
+            - public
+    only:
+        changes:
+            - tags
+            - master
+
+    
+## Unit-test of the collector 
+test_collector_job:
+    stage: unit_tests
+    image: anaslaaroussi/tweetoscope:base-1.0   
+    tags:
+        - docker 
+    script:
+        - mkdir reports
+        - ./build/collector/tests/collector-tests --log_level=all --log_format=JUNIT > reports/collector-reports.xml
+    artifacts:
+        reports:
+            junit: 
+                - reports/collector-reports.xml
+        paths:
+            - reports
+        expire_in: 30 days
+    dependencies:
+        - build_generator_collector_job
+    only:
+        changes:
+            - collector/*
+            - params/*
+            - CMakeLists.txt
+
+services:
+  - docker:dind
+
+create_docker_image_generator:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-generator-$TAG -f Dockerfiles/Dockerfile.generator .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-generator-$TAG
+    only:
+        changes:
+            - generator/src/*
+            - Dockerfiles/Dockerfile.generator
+            - Dockerfiles/Dockerfile.base
+            - params/params.config
+            - data/*
+
+create_docker_image_collector:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-collector-$TAG -f Dockerfiles/Dockerfile.collector .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-collector-$TAG
+    only:
+        changes:
+            - collector/src/*
+            - Dockerfiles/Dockerfile.collector
+            - Dockerfiles/Dockerfile.base
+            - params/params_collector.config
+
+create_docker_image_estimator:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-estimator-$TAG -f Dockerfiles/Dockerfile.estimator .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-estimator-$TAG
+    only:
+        changes:
+            - estimator/src/*
+            - Dockerfiles/Dockerfile.estimator
+            - params/params_py.config
+            - logger/*
+            - requirements.txt
+
+create_docker_image_predictor:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-predictor-$TAG -f Dockerfiles/Dockerfile.predictor .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-predictor-$TAG
+    only:
+        changes:
+            - predictor/src/*
+            - Dockerfiles/Dockerfile.predictor
+            - params/params_py.config
+            - logger/*
+            - requirements.txt                      
+
+create_docker_image_learner:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-learner-$TAG -f Dockerfiles/Dockerfile.learner .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-learner-$TAG
+    only:
+        changes:
+            - learner/src/*
+            - Dockerfiles/Dockerfile.learner
+            - params/params_py.config
+            - logger/*
+            - requirements.txt       
+
+create_docker_image_monitor:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-monitor-$TAG -f Dockerfiles/Dockerfile.monitor .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-monitor-$TAG
+    only:
+        changes:
+            - monitor/src/*
+            - Dockerfiles/Dockerfile.monitor
+            - params/params_py.config
+            - requirements.txt       
+
+create_docker_image_prometheus:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-prometheus-$TAG -f Dockerfiles/Dockerfile.prometheus .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-prometheus-$TAG
+    only:
+        changes:
+            - grafana/prometheus.yml
+            - grafna/rules.yml
+
+create_docker_image_dashboard:
+    stage: create_docker_images
+    image: docker:latest
+    tags:
+        - docker
+    script:
+        - docker build -t $CI_DOCKER_USER/tweetoscope:tweet-dashboard-$TAG -f Dockerfiles/Dockerfile.dashboard .
+        - docker login -u "$CI_DOCKER_USER" -p "$CI_DOCKER_PASS"
+        - docker push $CI_DOCKER_USER/tweetoscope:tweet-dashboard-$TAG
+    only:
+        changes:
+            - dashboard/src/*
+            - Dockerfiles/Dockerfile.dashboard
+            - params/params_py.config
+            - requirements.txt       
+
+
+
+
+       
+
+
